@@ -12,7 +12,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class FileDownloader {
-    final static int chunkSize = 5; // 1 MB
+    final static int chunkSize = 1024 * 1024; // 1MB
+    final static int numThreads = 8;
     final static OkHttpClient client = new OkHttpClient();
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
@@ -26,7 +27,7 @@ public class FileDownloader {
 
         int numChunks = (int) Math.ceil((double) length / chunkSize);
 
-        ExecutorService executor = Executors.newFixedThreadPool(numChunks);
+        ExecutorService executor = Executors.newFixedThreadPool(numThreads);
         ArrayList<Future<?>> futures = new ArrayList<>();
 
         try(RandomAccessFile file = new RandomAccessFile(outputPath, "rw")){

@@ -24,6 +24,11 @@ The file will be accessible at `http://localhost:8080/<filename>`. For example i
 java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar http://localhost:8080/test.txt output.txt
 ```
 
+Alternatively, you can test with any public URL that supports range requests:
+```bash
+java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar https://kvongcmehsanalibrary.wordpress.com/wp-content/uploads/2021/07/harrypotter.pdf output.pdf
+```
+
 ## How it works
 
 1. Sends a HEAD request to get file size from `Content-Length` header
