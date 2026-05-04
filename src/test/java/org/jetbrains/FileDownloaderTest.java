@@ -10,17 +10,17 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import static org.jetbrains.FileDownloader.getLength;
-import static org.jetbrains.FileDownloader.getRequest;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FileDownloaderTest {
     private final String outputPath = "test-output.txt";
     private MockWebServer server;
+    private HttpClient httpClient = new HttpClientImpl(new okhttp3.OkHttpClient());
 
     @BeforeEach
     void setup() throws IOException {
         server = new MockWebServer();
+        httpClient = new HttpClientImpl(new okhttp3.OkHttpClient());
     }
 
     @AfterEach
@@ -36,7 +36,7 @@ public class FileDownloaderTest {
                 .addHeader("Accept-Ranges", "bytes")
         );
 
-        int length = getLength(server.url("/test.txt").toString());
+        long length = httpClient.getFileSize(server.url("/test.txt").toString());
 
         assertEquals(length, 42);
     }
@@ -47,8 +47,8 @@ public class FileDownloaderTest {
                 .addHeader("Accept-Ranges", "bytes")
         );
 
-        assertThrows(RuntimeException.class, () -> {
-            getLength(server.url("/test.txt").toString());
+        assertThrows(IOException.class, () -> {
+            httpClient.getFileSize(server.url("/test.txt").toString());
         });
     }
 
@@ -58,8 +58,8 @@ public class FileDownloaderTest {
                 .addHeader("Content-Length", "42")
         );
 
-        assertThrows(RuntimeException.class, () -> {
-            getLength(server.url("/test.txt").toString());
+        assertThrows(IOException.class, () -> {
+            httpClient.getFileSize(server.url("/test.txt").toString());
         });
     }
 
@@ -70,7 +70,7 @@ public class FileDownloaderTest {
                 .setResponseCode(206)
         );
 
-        String response = new String(getRequest(server.url("/test.txt").toString(), 0, 4));
+        String response = new String(httpClient.downloadChunk(server.url("/test.txt").toString(), 0, 4));
 
         assertEquals("Hello", response);
     }
@@ -110,5 +110,55 @@ public class FileDownloaderTest {
 
         //Checks if the right content downloaded
         assertEquals("Hello World!", content);
+    }
+
+    @Test
+    void testDownloadSingleChunk() throws Exception {
+        HttpClient mockClient = new HttpClient() {
+            @Override
+            public byte[] downloadChunk(String url, long start, long end) throws IOException {
+                return "Hello".getBytes();
+            }
+
+            @Override
+            public long getFileSize(String url) throws IOException {
+                return 5;
+            }
+        };
+
+        new FileDownloader(mockClient, 1024, 8).download("http://fake", outputPath);
+        String content = new String(java.nio.file.Files.readAllBytes(java.nio.file.Path.of(outputPath)));
+        assertEquals("Hello", content);
+    }
+
+    @Test
+    void testDownloadMultipleChunks() throws Exception {
+        String[] chunks = {"Hel", "lo ", "Wor"};
+        HttpClient mockClient = new HttpClient() {
+            @Override
+            public byte[] downloadChunk(String url, long start, long end) { return chunks[(int) (start / chunks.length)].getBytes();}
+
+            @Override
+            public long getFileSize(String url) { return 9;}
+        };
+
+        new FileDownloader(mockClient, 3, 8).download("http://fake", outputPath);
+        String content = new String(java.nio.file.Files.readAllBytes(java.nio.file.Path.of(outputPath)));
+        assertEquals("Hello Wor", content);
+    }
+
+    @Test
+    void testChunkFailureThrows() throws IOException {
+        HttpClient mockClient = new HttpClient() {
+            @Override
+            public byte[] downloadChunk(String url, long start, long end) throws IOException {
+                throw new IOException("Network error");
+            }
+
+            @Override
+            public long getFileSize(String url) { return 9;}
+        };
+
+        assertThrows(Exception.class, () -> new FileDownloader(mockClient, 3, 8).download("http://fake", outputPath));
     }
 }

@@ -34,7 +34,8 @@ java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar https://
 1. Sends a HEAD request to get file size from `Content-Length` header
 2. Verifies server supports range requests via `Accept-Ranges: bytes` header
 3. Splits the file into chunks and downloads them in parallel using `ExecutorService`
-4. Writes each chunk to the correct byte offset in the output file using `RandomAccessFile`
+4. Writes each chunk atomically to the correct byte offset using FileChannel,
+   which allows lock-free parallel writes
 
 ## Tests
 ```bash
