@@ -29,6 +29,10 @@ Alternatively, you can test with any public URL that supports range requests:
 java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar https://kvongcmehsanalibrary.wordpress.com/wp-content/uploads/2021/07/harrypotter.pdf output.pdf
 ```
 
+Note:
+If the server does not support range requests (e.g. some cloud storage links),
+the downloader will automatically fall back to sequential downloading.
+
 ## How it works
 
 1. Sends a HEAD request to get file size from `Content-Length` header
@@ -36,6 +40,8 @@ java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar https://
 3. Splits the file into chunks and downloads them in parallel using `ExecutorService`
 4. Writes each chunk atomically to the correct byte offset using FileChannel,
    which allows lock-free parallel writes
+5. If the server does not return Content-Length or does not support range requests, 
+   automatically falls back to a single sequential download
 
 ## Tests
 ```bash

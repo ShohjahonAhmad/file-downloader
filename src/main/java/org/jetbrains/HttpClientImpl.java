@@ -52,4 +52,17 @@ public class HttpClientImpl implements HttpClient{
 
         return length;
     }
+
+    @Override
+    public byte[] downloadFull(String url) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+
+        try (Response response = client.newCall(request).execute()){
+        if(response.code() != 200) throw new IOException("Failed to download file: HTTP " + response.code());
+        if(response.body() == null) throw new IOException("Empty response body");
+        return response.body().bytes();
+        }
+    }
 }

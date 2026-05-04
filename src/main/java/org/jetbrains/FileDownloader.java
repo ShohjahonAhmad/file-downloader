@@ -31,14 +31,22 @@ public class FileDownloader {
             return;
         }
 
-
-
         new FileDownloader(new HttpClientImpl(new OkHttpClient()), 1024 * 1024, 8).download(args[0], args[1]);
     }
 
     public void download(String url, String outputPath) throws IOException, ExecutionException, InterruptedException {
-        long length = httpClient.getFileSize(url);
-
+        long length = -1;
+        try {
+            length = httpClient.getFileSize(url);
+        } catch (IOException exception) {
+            System.out.println("Failed to get file size: " + exception.getMessage());
+            System.out.println("Fallback to sequential downloading...");
+            byte[] file = httpClient.downloadFull(url);
+            try (RandomAccessFile raf = new RandomAccessFile(outputPath, "rw")) {
+                raf.write(file);
+            }
+            return;
+        }
         long numChunks = (length + chunkSize - 1) / chunkSize;
 
         ExecutorService executor = Executors.newFixedThreadPool(numThreads);
