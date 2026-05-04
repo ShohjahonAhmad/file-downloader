@@ -124,6 +124,11 @@ public class FileDownloaderTest {
             public long getFileSize(String url) throws IOException {
                 return 5;
             }
+
+            @Override
+            public byte[] downloadFull(String url) throws IOException {
+                return new byte[0];
+            }
         };
 
         new FileDownloader(mockClient, 1024, 8).download("http://fake", outputPath);
@@ -140,6 +145,11 @@ public class FileDownloaderTest {
 
             @Override
             public long getFileSize(String url) { return 9;}
+
+            @Override
+            public byte[] downloadFull(String url) throws IOException {
+                return new byte[0];
+            }
         };
 
         new FileDownloader(mockClient, 3, 8).download("http://fake", outputPath);
@@ -157,6 +167,11 @@ public class FileDownloaderTest {
 
             @Override
             public long getFileSize(String url) { return 9;}
+
+            @Override
+            public byte[] downloadFull(String url) throws IOException {
+                return new byte[0];
+            }
         };
 
         assertThrows(Exception.class, () -> new FileDownloader(mockClient, 3, 8).download("http://fake", outputPath));
