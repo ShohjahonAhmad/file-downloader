@@ -29,7 +29,7 @@ public class FileDownloader {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
-            System.out.println("Usage: java downloadFile <url> <outputFile>");
+            System.out.println("Usage: java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar <file_url> <output_path>");
             return;
         }
 
