@@ -38,10 +38,13 @@ the downloader will automatically fall back to sequential downloading.
 1. Sends a HEAD request to get file size from `Content-Length` header
 2. Verifies server supports range requests via `Accept-Ranges: bytes` header
 3. Splits the file into chunks and downloads them in parallel using `ExecutorService`
-4. Writes each chunk atomically to the correct byte offset using FileChannel,
+4. Writes each chunk atomically to the correct byte offset using `FileChannel`,
    which allows lock-free parallel writes
-5. If the server does not return Content-Length or does not support range requests, 
+5. Retries failed chunks up to 3 times with exponential backoff (1s, 2s, 3s delays)
+6. If the server does not return `Content-Length` or does not support range requests,
    automatically falls back to a single sequential download
+7. Logs progress and errors using `java.util.logging` with appropriate levels
+   (INFO for progress, WARNING for degraded behavior, SEVERE for fatal errors)
 
 ## Tests
 ```bash
