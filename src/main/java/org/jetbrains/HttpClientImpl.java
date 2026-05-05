@@ -5,9 +5,11 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 public class HttpClientImpl implements HttpClient{
 
+    private static final Logger logger = Logger.getLogger(HttpClientImpl.class.getName());
     private final OkHttpClient client;
 
     public HttpClientImpl(OkHttpClient client) {
@@ -29,7 +31,7 @@ public class HttpClientImpl implements HttpClient{
     private byte[] requestTheChunk(Request request, int retries) throws IOException {
         IOException lastException = null;
         for(int attempt = 0; attempt <= retries; attempt++){
-            if(attempt != 0) {
+            if(attempt > 0) {
                 try {
                     Thread.sleep(1000L * attempt);
                 } catch (InterruptedException ie) {
@@ -42,6 +44,8 @@ public class HttpClientImpl implements HttpClient{
                     return response.body().bytes();
                 }
                 lastException = new IOException("Unexpected response code: " + response.code());
+                if(attempt > 0)
+                    logger.warning("Attempt " + attempt + " failed: " + lastException.getMessage() + ". Retrying...");
             }
         };
 
@@ -75,7 +79,7 @@ public class HttpClientImpl implements HttpClient{
         if (!"bytes".equals(acceptRanges))
             throw new IOException("Server does not support range requests");
 
-        System.out.println("Accept-Ranges: " + acceptRanges);
+        logger.info("Accept-Ranges: " + acceptRanges);
     }
 
     private long validateContentLength(String contentLength) throws IOException{
@@ -85,7 +89,7 @@ public class HttpClientImpl implements HttpClient{
         long length = Long.parseLong(contentLength);
         if (length <= 0)
             throw new IOException("Invalid Content-Length value: " + length);
-        System.out.println("Content-Length: " + length + " bytes (" + String.format("%.2f", length / (1024.0 * 1024.0)) + " MB)");
+        logger.info("Content-Length: " + length + " bytes (" + String.format("%.2f", length / (1024.0 * 1024.0)) + " MB)");
 
         return length;
     }

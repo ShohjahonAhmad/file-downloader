@@ -15,11 +15,13 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.logging.Logger;
 
 public class FileDownloader {
     private final int chunkSize; // 1MB
     private final int numThreads;
     private final HttpClient httpClient;
+    private static final Logger logger = Logger.getLogger(FileDownloader.class.getName());
 
     public FileDownloader(HttpClient httpClient, int chunkSize, int numThreads) {
         this.chunkSize = chunkSize;
@@ -29,11 +31,15 @@ public class FileDownloader {
 
     public static void main(String[] args) throws Exception {
         if (args.length < 2) {
-            System.out.println("Usage: java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar <file_url> <output_path>");
+            logger.warning("Usage: java -jar target/file-downloader-1.0-SNAPSHOT-jar-with-dependencies.jar <file_url> <output_path>");
             return;
         }
 
-        new FileDownloader(new HttpClientImpl(new OkHttpClient()), 1024 * 1024, 8).download(args[0], args[1]);
+        try {
+            new FileDownloader(new HttpClientImpl(new OkHttpClient()), 1024 * 1024, 8).download(args[0], args[1]);
+        } catch (Exception e) {
+            logger.severe(e.getMessage());
+        }
     }
 
     public void download(String url, String outputPath) throws Exception {
@@ -41,8 +47,8 @@ public class FileDownloader {
         try {
             length = httpClient.getFileSize(url);
         } catch (IOException exception) {
-            System.out.println("Failed to get file size: " + exception.getMessage());
-            System.out.println("Fallback to sequential downloading...");
+            logger.warning("Failed to get file size: " + exception.getMessage());
+            logger.warning("Fallback to sequential downloading...");
 
             byte[] data = httpClient.downloadFull(url);
             writeToFile(data, outputPath);
@@ -65,7 +71,7 @@ public class FileDownloader {
                     try {
                         byte[] data = httpClient.downloadChunk(url, start, end);
                         channel.write(ByteBuffer.wrap(data), start);
-                        System.out.println("Downloaded chunk " + chunkIndex + ": bytes " + start + "-" + end);
+                        logger.info("Downloaded chunk " + chunkIndex + ": bytes " + start + "-" + end);
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
@@ -75,7 +81,7 @@ public class FileDownloader {
 
             try {
                 waitAllFutures(futures);
-                System.out.println("Download completed successfully.");
+                logger.info("Download completed successfully.");
             } finally {
                 executor.shutdown();
             }
